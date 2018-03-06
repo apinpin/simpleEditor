@@ -2,7 +2,7 @@ const electron = require('electron');
 const url = require('url');
 const path = require('path');
 
-const {app, BrowserWindow, Menu} = electron;
+const {app, BrowserWindow, Menu, ipcMain} = electron;
 
 let mainWindow;
 let addWindow;
@@ -22,12 +22,15 @@ app.on('ready', function(){
         app.quit();
     });
 
-    createWindow();
-
     // Build menu from template
-    //const mainMenu = Menu.buildFromTemplate(mainMenuTemplate);
-    // Inster Menu
-    //Menu.setApplicationMenu(mainMenu);
+       const mainMenu = Menu.buildFromTemplate(mainMenuTemplate);
+    // Insert Menu
+       Menu.setApplicationMenu(mainMenu);
+});
+
+// Catch add window event 
+ipcMain.on('newWindow', function(){
+    createWindow();
 });
 
 // Creates a new window
@@ -55,6 +58,39 @@ function createWindow()
 // Create Menu Template
 const mainMenuTemplate = [
     {
-        label: 'File'
+        label: 'File',
+        submenu: [
+            {
+                label: 'Quit',
+                accelerator: process.platform == 'darwin' ? 'Command+Q' : 'Ctrl+Q',
+                click(){
+                    app.quit();
+                }
+            }
+        ]
     }
 ];
+
+// If Mac, add empty object to menu
+if(process.platform == 'darwin'){
+    mainMenuTemplate.unshift({});
+}
+
+// Add Dev Tools if not in prod
+if(process.env.NODE_ENV !== 'production'){
+    mainMenuTemplate.push({
+        label: 'Developer Tools',
+        submenu: [
+            {
+                label: 'Toggle DevTools',
+                accelerator: process.platform == 'darwin' ? 'Command+I' : 'Ctrl+I',
+                click(item, focusedWindow){
+                    focusedWindow.toggleDevTools();
+                }
+            },
+            {
+                role: 'reload'
+            }
+        ]
+    });
+}
